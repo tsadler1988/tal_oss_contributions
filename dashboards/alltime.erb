@@ -1,0 +1,42 @@
+<% content_for :title do %>All time contributions
+<% end %>
+<div class="gridster">
+    <ul>
+        <li data-row="1" data-col="1" data-sizex="1" data-sizey="1">
+            <div data-id="totalOpenedPullRequests" data-view="Number" data-title="Total pull requests opened"></div>
+        </li>
+
+        <li data-row="1" data-col="2" data-sizex="1" data-sizey="1">
+            <div data-id="totalClosedPullRequests" data-view="Number" data-title="Total pull requests closed"></div>
+        </li>
+
+        <li data-row="1" data-col="3" data-sizex="1" data-sizey="1">
+            <div data-id="totalPullRequestsLeadTime" data-view="Number" data-title="Average lead time" data-moreinfo="days"></div>
+        </li>
+
+        <li data-row="2" data-col="1" data-sizex="1" data-sizey="1">
+            <div data-id="nonTalPullRequestsOpened" data-view="Number" data-title="Pull requests from outside TAL team opened" style="background-color: #aa1100"></div>
+        </li>
+
+        <li data-row="2" data-col="2" data-sizex="1" data-sizey="1">
+            <div data-id="nonTalPullRequestsClosed" data-view="Number" data-title="Pull requests from outside TAL team closed" style="background-color: #aa1100"></div>
+        </li>
+
+        <li data-row="2" data-col="3" data-sizex="1" data-sizey="1">
+            <div data-id="nonTalPullRequestsLeadTime" data-view="Number" data-title="Average lead time" style="background-color: #aa1100" data-moreinfo="days"></div>
+        </li>
+
+        <li data-row="3" data-col="1" data-sizex="1" data-sizey="1">
+            <div data-id="nonBbcPullRequestsOpened" data-view="Number" data-title="Pull requests from outside the BBC opened" style="background-color: #f0c300"></div>
+        </li>
+
+        <li data-row="3" data-col="2" data-sizex="1" data-sizey="1">
+            <div data-id="nonBbcPullRequestsClosed" data-view="Number" data-title="Pull requests from outside the BBC closed" style="background-color: #f0c300"></div>
+        </li>
+
+        <li data-row="3" data-col="3" data-sizex="1" data-sizey="1">
+            <div data-id="nonBbcPullRequestsLeadTime" data-view="Number" data-title="Average lead time" style="background-color: #f0c300" data-moreinfo="days"></div>
+        </li>
+
+    </ul>
+</div>
