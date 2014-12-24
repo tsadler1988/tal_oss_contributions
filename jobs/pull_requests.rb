@@ -3,23 +3,34 @@ require 'time'
 require 'dashing'
 require 'octokit'
 
-SCHEDULER.every '5s' do
+SCHEDULER.every '10s' do
 
 
-  openedPulls = pull_count_by_status('fmtvp/tal', 'all')
+  openedPulls = pull_count_by_status('fmtvp/tal', 'open')
   closedPulls = pull_count_by_status('fmtvp/tal', 'closed')
+
+  #puts("Closed pulls:")
+  #puts(closedPulls)
+
+  closedPulls.each do |pull|
+    unless pull[:mergeddate]
+      closedPulls.delete(pull)
+    end
+  end
+
+  #outside_tal(openedPulls, closedPulls)
 
   leadTime = calculateLeadTime(closedPulls)
 
   send_event(
-      'totalOpenedPullRequests',
+      'totalOpenPullRequests',
       {
           current: openedPulls.count
       }
   )
 
   send_event(
-      'totalClosedPullRequests',
+      'totalMergedPullRequests',
       {
           current: closedPulls.count
       }
@@ -51,11 +62,10 @@ def pull_count_by_status(repo, state)
             openeddatetime: pull.created_at,
             closeddatetime: pull.closed_at,
             key: pull.state.dup,
-            value: 1
+            mergeddate: pull.merged_at,
+            contributor: pull.user.login
         }
       end
-    rescue Octokit::Error => exception
-      Raven.capture_exception(exception)
     end
 
   client = nil
