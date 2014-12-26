@@ -44,10 +44,10 @@ SCHEDULER.every '10s' do
   )
 
   set_tal_team()
-  #set_fmtvp_org()
+  set_fmtvp_org()
 
   outside_tal(openedPulls, closedPulls)
-  #outside_fmtvp(openedPulls, closedPulls)
+  outside_fmtvp(openedPulls, closedPulls)
 
 end
 
@@ -55,7 +55,7 @@ def pull_count_by_status(repo, state)
   events = []
   client = Octokit::Client.new(
       :login => "tsadlerBBC",
-      :access_token => "50c3b73f233cb958811ac2cf0140f789f534a9f2"
+      :access_token => "ff4140fec4d58abe7c7251cb136f0017ac1407bf"
   )
   client.auto_paginate = true
 
@@ -94,7 +94,7 @@ def set_tal_team()
 
   client = Octokit::Client.new(
       :login => "tsadlerBBC",
-      :access_token => "50c3b73f233cb958811ac2cf0140f789f534a9f2"
+      :access_token => "ff4140fec4d58abe7c7251cb136f0017ac1407bf"
   )
   client.auto_paginate = true
 
@@ -109,11 +109,19 @@ def set_tal_team()
 end
 
 def set_fmtvp_org()
+  $fmtvp_org = []
+
   client = Octokit::Client.new(
       :login => "tsadlerBBC",
-      :access_token => "50c3b73f233cb958811ac2cf0140f789f534a9f2"
+      :access_token => "ff4140fec4d58abe7c7251cb136f0017ac1407bf"
   )
   client.auto_paginate = true
+
+  org = client.organization_members('fmtvp')
+
+  org.each do |member|
+    $fmtvp_org << member.login
+  end
 
   client = nil
   Octokit.reset!
@@ -161,10 +169,52 @@ def outside_tal (open, merged)
 
 end
 
+def outside_fmtvp (open, merged)
+
+  mergedOutsideFmtvp = []
+  openOutsideFmtvp = []
+
+  merged.each do |pull|
+    unless fmtvp_org_member?(pull[:contributor])
+      mergedOutsideFmtvp << pull
+    end
+  end
+
+  open.each do |pull|
+    unless fmtvp_org_member?(pull[:contributor])
+      openOutsideFmtvp << pull
+    end
+  end
+
+  leadTime = calculateLeadTime(mergedOutsideFmtvp)
+
+  send_event(
+      'nonFmtvpPullRequestsOpen',
+      {
+          current: openOutsideFmtvp.count
+      }
+  )
+
+  send_event(
+      'nonFmtvpPullRequestsMerged',
+      {
+          current: mergedOutsideFmtvp.count
+      }
+  )
+
+  send_event(
+      'nonFmtvpPullRequestsLeadTime',
+      {
+          current: leadTime
+      }
+  )
+
+end
+
 def tal_team_member?(user)
-  result = $tal_team.include? user
-  return result
+  return $tal_team.include? user
 end
 
 def fmtvp_org_member?(user)
+  return $fmtvp_org.include? user
 end
