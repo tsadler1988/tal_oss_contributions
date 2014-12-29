@@ -6,6 +6,8 @@ require 'octokit'
 $tal_team
 $fmtvp_org
 $tal_team_id = 321953
+$login = ''
+$access_token = ''
 
 SCHEDULER.every '10s' do
 
@@ -16,11 +18,14 @@ SCHEDULER.every '10s' do
 
   closedPulls.each do |pull|
     if pull[:mergeddate]
-      mergedPulls << pull
+      mergedDate = pull[:mergeddate].to_date
+      if mergedDate > Date.parse('2014-06-01')
+        mergedPulls << pull
+      end
     end
   end
 
-  leadTime = calculateLeadTime(closedPulls)
+  leadTime = calculateLeadTime(mergedPulls)
 
   send_event(
       'totalOpenPullRequests',
@@ -46,16 +51,16 @@ SCHEDULER.every '10s' do
   set_tal_team()
   set_fmtvp_org()
 
-  outside_tal(openedPulls, closedPulls)
-  outside_fmtvp(openedPulls, closedPulls)
+  outside_tal(openedPulls, mergedPulls)
+  outside_fmtvp(openedPulls, mergedPulls)
 
 end
 
 def pull_count_by_status(repo, state)
   events = []
   client = Octokit::Client.new(
-      :login => "tsadlerBBC",
-      :access_token => "ff4140fec4d58abe7c7251cb136f0017ac1407bf"
+      :login => $login,
+      :access_token => $access_token
   )
   client.auto_paginate = true
 
@@ -78,12 +83,15 @@ end
 def calculateLeadTime(closedPulls)
   averageLeadTime = 0.0
 
-  closedPulls.each do |pull|
-    leadTime = (pull[:closeddatetime].to_date - pull[:openeddatetime].to_date).to_i
-    averageLeadTime += leadTime
-  end
+  if closedPulls.count > 0
 
-  averageLeadTime = averageLeadTime / closedPulls.count
+    closedPulls.each do |pull|
+      leadTime = (pull[:closeddatetime].to_date - pull[:openeddatetime].to_date).to_i
+      averageLeadTime += leadTime
+    end
+
+    averageLeadTime = averageLeadTime / closedPulls.count
+  end
 
   return averageLeadTime.round(2)
 end
@@ -93,8 +101,8 @@ def set_tal_team()
   $tal_team = []
 
   client = Octokit::Client.new(
-      :login => "tsadlerBBC",
-      :access_token => "ff4140fec4d58abe7c7251cb136f0017ac1407bf"
+      :login => $login,
+      :access_token => $access_token
   )
   client.auto_paginate = true
 
@@ -112,8 +120,8 @@ def set_fmtvp_org()
   $fmtvp_org = []
 
   client = Octokit::Client.new(
-      :login => "tsadlerBBC",
-      :access_token => "ff4140fec4d58abe7c7251cb136f0017ac1407bf"
+      :login => $login,
+      :access_token => $access_token
   )
   client.auto_paginate = true
 
