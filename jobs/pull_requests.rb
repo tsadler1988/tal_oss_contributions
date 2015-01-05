@@ -9,7 +9,8 @@ $tal_team_id = 321953
 $login = ''
 $access_token = ''
 
-SCHEDULER.every '10s' do
+SCHEDULER.every '1m' do
+  # can we listen to POSTs instead?
 
 
   openedPulls = pull_count_by_status('fmtvp/tal', 'open')
