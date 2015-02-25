@@ -26,34 +26,12 @@ SCHEDULER.every '1m' do
     end
   end
 
-  leadTime = calculateLeadTime(mergedPulls)
-
-  send_event(
-      'totalOpenPullRequests',
-      {
-          current: openedPulls.count
-      }
-  )
-
-  send_event(
-      'totalMergedPullRequests',
-      {
-          current: mergedPulls.count
-      }
-  )
-
-  send_event(
-      'totalPullRequestsLeadTime',
-      {
-          current: leadTime
-      }
-  )
-
   set_tal_team()
   set_fmtvp_org()
 
-  outside_tal(openedPulls, mergedPulls)
-  outside_fmtvp(openedPulls, mergedPulls)
+  tal(openedPulls, mergedPulls)
+  tvp(openedPulls, mergedPulls)
+  external(openedPulls, mergedPulls)
 
 end
 
@@ -136,41 +114,41 @@ def set_fmtvp_org()
   Octokit.reset!
 end
 
-def outside_tal (open, merged)
+def tal (open, merged)
 
-  mergedOutsideTal = []
-  openOutsideTal = []
+  mergedTal = []
+  openTal = []
 
   merged.each do |pull|
-    unless tal_team_member?(pull[:contributor])
-      mergedOutsideTal << pull
+    if tal_team_member?(pull[:contributor])
+      mergedTal << pull
     end
   end
 
   open.each do |pull|
-    unless tal_team_member?(pull[:contributor])
-      openOutsideTal << pull
+    if tal_team_member?(pull[:contributor])
+      openTal << pull
     end
   end
 
-  leadTime = calculateLeadTime(mergedOutsideTal)
+  leadTime = calculateLeadTime(mergedTal)
 
   send_event(
-      'nonTalPullRequestsOpen',
+      'talOpenPullRequests',
       {
-          current: openOutsideTal.count
+          current: openTal.count
       }
   )
 
   send_event(
-      'nonTalPullRequestsMerged',
+      'talMergedPullRequests',
       {
-          current: mergedOutsideTal.count
+          current: mergedTal.count
       }
   )
 
   send_event(
-      'nonTalPullRequestsLeadTime',
+      'talPullRequestsLeadTime',
       {
           current: leadTime
       }
@@ -178,41 +156,83 @@ def outside_tal (open, merged)
 
 end
 
-def outside_fmtvp (open, merged)
+def tvp (open, merged)
 
-  mergedOutsideFmtvp = []
-  openOutsideFmtvp = []
+  mergedTvp = []
+  openTvp = []
+
+  merged.each do |pull|
+    if (fmtvp_org_member?(pull[:contributor])) && !(tal_team_member?(pull[:contributor]))
+      mergedTvp << pull
+    end
+  end
+
+  open.each do |pull|
+    if (fmtvp_org_member?(pull[:contributor])) && !(tal_team_member?(pull[:contributor]))
+      openTvp << pull
+    end
+  end
+
+  leadTime = calculateLeadTime(mergedTvp)
+
+  send_event(
+      'tvpPullRequestsOpen',
+      {
+          current: openTvp.count
+      }
+  )
+
+  send_event(
+      'tvpPullRequestsMerged',
+      {
+          current: mergedTvp.count
+      }
+  )
+
+  send_event(
+      'tvpPullRequestsLeadTime',
+      {
+          current: leadTime
+      }
+  )
+
+end
+
+def external (open, merged)
+
+  mergedExternal = []
+  openExternal = []
 
   merged.each do |pull|
     unless fmtvp_org_member?(pull[:contributor])
-      mergedOutsideFmtvp << pull
+      mergedExternal << pull
     end
   end
 
   open.each do |pull|
     unless fmtvp_org_member?(pull[:contributor])
-      openOutsideFmtvp << pull
+      openExternal << pull
     end
   end
 
-  leadTime = calculateLeadTime(mergedOutsideFmtvp)
+  leadTime = calculateLeadTime(mergedExternal)
 
   send_event(
-      'nonFmtvpPullRequestsOpen',
+      'externalPullRequestsOpen',
       {
-          current: openOutsideFmtvp.count
+          current: openExternal.count
       }
   )
 
   send_event(
-      'nonFmtvpPullRequestsMerged',
+      'externalPullRequestsMerged',
       {
-          current: mergedOutsideFmtvp.count
+          current: mergedExternal.count
       }
   )
 
   send_event(
-      'nonFmtvpPullRequestsLeadTime',
+      'externalPullRequestsLeadTime',
       {
           current: leadTime
       }
