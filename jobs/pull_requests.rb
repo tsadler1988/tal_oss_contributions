@@ -5,8 +5,8 @@ require 'octokit'
 
 $orion_team
 $bbc_org
-$login = 'tsadler1988'
-$access_token = '909f53f22432db9c3b1e51bf89e82c5b16c94009'
+$login = ''
+$access_token = ''
 
 SCHEDULER.every '1m' do
   puts('starting')
