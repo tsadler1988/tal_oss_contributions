@@ -5,8 +5,39 @@ require 'octokit'
 
 $orion_team
 $bbc_org
-$login = ''
-$access_token = ''
+$login = 'tsadler1988'
+$access_token = '909f53f22432db9c3b1e51bf89e82c5b16c94009'
+
+SCHEDULER.every '1m' do
+  puts('starting')
+
+  openedPulls = pull_count_by_status('bbc/morty-docs', 'open')
+  closedPulls = pull_count_by_status('bbc/morty-docs', 'closed')
+  mergedPulls = []
+
+  closedPulls.each do |pull|
+    if pull[:mergeddate]
+      mergedDate = pull[:mergeddate].to_date
+      if mergedDate > Date.parse('2020-01-01')
+        mergedPulls << pull
+      end
+    end
+  end
+
+  puts('got pulls')
+
+  set_orion_team()
+  puts('got Orion')
+
+  set_bbc_org()
+  puts('got BBC')
+
+  orion(openedPulls, mergedPulls)
+  bbc(openedPulls, mergedPulls)
+  external(openedPulls, mergedPulls)
+
+  puts('Done')
+end
 
 def pull_count_by_status(repo, state)
   events = []
@@ -222,32 +253,3 @@ end
 def bbc_org_member?(user)
   return $bbc_org.include? user
 end
-
-puts('starting')
-
-openedPulls = pull_count_by_status('bbc/morty-docs', 'open')
-closedPulls = pull_count_by_status('bbc/morty-docs', 'closed')
-mergedPulls = []
-
-closedPulls.each do |pull|
-  if pull[:mergeddate]
-    mergedDate = pull[:mergeddate].to_date
-    if mergedDate > Date.parse('2020-01-01')
-      mergedPulls << pull
-    end
-  end
-end
-
-puts('got pulls')
-
-set_orion_team()
-puts('got Orion')
-
-set_bbc_org()
-puts('got BBC')
-
-orion(openedPulls, mergedPulls)
-bbc(openedPulls, mergedPulls)
-external(openedPulls, mergedPulls)
-
-puts('Done')
