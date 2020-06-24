@@ -3,37 +3,10 @@ require 'time'
 require 'dashing'
 require 'octokit'
 
-$tal_team
-$fmtvp_org
-$tal_team_id = 321953
+$orion_team
+$bbc_org
 $login = ''
 $access_token = ''
-
-SCHEDULER.every '1m' do
-  # can we listen to POSTs instead?
-
-
-  openedPulls = pull_count_by_status('fmtvp/tal', 'open')
-  closedPulls = pull_count_by_status('fmtvp/tal', 'closed')
-  mergedPulls = []
-
-  closedPulls.each do |pull|
-    if pull[:mergeddate]
-      mergedDate = pull[:mergeddate].to_date
-      if mergedDate > Date.parse('2014-06-01')
-        mergedPulls << pull
-      end
-    end
-  end
-
-  set_tal_team()
-  set_fmtvp_org()
-
-  tal(openedPulls, mergedPulls)
-  tvp(openedPulls, mergedPulls)
-  external(openedPulls, mergedPulls)
-
-end
 
 def pull_count_by_status(repo, state)
   events = []
@@ -75,9 +48,9 @@ def calculateLeadTime(closedPulls)
   return averageLeadTime.round(2)
 end
 
-def set_tal_team()
+def set_orion_team()
 
-  $tal_team = []
+  $orion_team = []
 
   client = Octokit::Client.new(
       :login => $login,
@@ -85,18 +58,20 @@ def set_tal_team()
   )
   client.auto_paginate = true
 
-  team = client.team_members($tal_team_id)
+  $team_id = client.team_by_name("bbc", "orion")[:id]
+
+  team = client.team_members($team_id)
 
   team.each do |member|
-    $tal_team << member.login
+    $orion_team << member.login
   end
 
   client = nil
   Octokit.reset!
 end
 
-def set_fmtvp_org()
-  $fmtvp_org = []
+def set_bbc_org()
+  $bbc_org = []
 
   client = Octokit::Client.new(
       :login => $login,
@@ -104,51 +79,51 @@ def set_fmtvp_org()
   )
   client.auto_paginate = true
 
-  org = client.organization_members('fmtvp')
+  org = client.organization_members('bbc')
 
   org.each do |member|
-    $fmtvp_org << member.login
+    $bbc_org << member.login
   end
 
   client = nil
   Octokit.reset!
 end
 
-def tal (open, merged)
+def orion (open, merged)
 
-  mergedTal = []
-  openTal = []
+  mergedOrion = []
+  openOrion = []
 
   merged.each do |pull|
-    if tal_team_member?(pull[:contributor])
-      mergedTal << pull
+    if orion_team_member?(pull[:contributor])
+      mergedOrion << pull
     end
   end
 
   open.each do |pull|
-    if tal_team_member?(pull[:contributor])
-      openTal << pull
+    if orion_team_member?(pull[:contributor])
+      openOrion << pull
     end
   end
 
-  leadTime = calculateLeadTime(mergedTal)
+  leadTime = calculateLeadTime(mergedOrion)
 
   send_event(
-      'talOpenPullRequests',
+      'orionOpenPullRequests',
       {
-          current: openTal.count
+          current: openOrion.count
       }
   )
 
   send_event(
-      'talMergedPullRequests',
+      'orionMergedPullRequests',
       {
-          current: mergedTal.count
+          current: mergedOrion.count
       }
   )
 
   send_event(
-      'talPullRequestsLeadTime',
+      'orionPullRequestsLeadTime',
       {
           current: leadTime
       }
@@ -156,41 +131,41 @@ def tal (open, merged)
 
 end
 
-def tvp (open, merged)
+def bbc (open, merged)
 
-  mergedTvp = []
-  openTvp = []
+  mergedBbc = []
+  openBbc = []
 
   merged.each do |pull|
-    if (fmtvp_org_member?(pull[:contributor])) && !(tal_team_member?(pull[:contributor]))
-      mergedTvp << pull
+    if (bbc_org_member?(pull[:contributor])) && !(orion_team_member?(pull[:contributor]))
+      mergedBbc << pull
     end
   end
 
   open.each do |pull|
-    if (fmtvp_org_member?(pull[:contributor])) && !(tal_team_member?(pull[:contributor]))
-      openTvp << pull
+    if (bbc_org_member?(pull[:contributor])) && !(orion_team_member?(pull[:contributor]))
+      openBbc << pull
     end
   end
 
-  leadTime = calculateLeadTime(mergedTvp)
+  leadTime = calculateLeadTime(mergedBbc)
 
   send_event(
-      'tvpPullRequestsOpen',
+      'bbcPullRequestsOpen',
       {
-          current: openTvp.count
+          current: openBbc.count
       }
   )
 
   send_event(
-      'tvpPullRequestsMerged',
+      'bbcPullRequestsMerged',
       {
-          current: mergedTvp.count
+          current: mergedBbc.count
       }
   )
 
   send_event(
-      'tvpPullRequestsLeadTime',
+      'bbcPullRequestsLeadTime',
       {
           current: leadTime
       }
@@ -204,13 +179,13 @@ def external (open, merged)
   openExternal = []
 
   merged.each do |pull|
-    unless fmtvp_org_member?(pull[:contributor])
+    unless bbc_org_member?(pull[:contributor])
       mergedExternal << pull
     end
   end
 
   open.each do |pull|
-    unless fmtvp_org_member?(pull[:contributor])
+    unless bbc_org_member?(pull[:contributor])
       openExternal << pull
     end
   end
@@ -240,10 +215,39 @@ def external (open, merged)
 
 end
 
-def tal_team_member?(user)
-  return $tal_team.include? user
+def orion_team_member?(user)
+  return $orion_team.include? user
 end
 
-def fmtvp_org_member?(user)
-  return $fmtvp_org.include? user
+def bbc_org_member?(user)
+  return $bbc_org.include? user
 end
+
+puts('starting')
+
+openedPulls = pull_count_by_status('bbc/morty-docs', 'open')
+closedPulls = pull_count_by_status('bbc/morty-docs', 'closed')
+mergedPulls = []
+
+closedPulls.each do |pull|
+  if pull[:mergeddate]
+    mergedDate = pull[:mergeddate].to_date
+    if mergedDate > Date.parse('2020-01-01')
+      mergedPulls << pull
+    end
+  end
+end
+
+puts('got pulls')
+
+set_orion_team()
+puts('got Orion')
+
+set_bbc_org()
+puts('got BBC')
+
+orion(openedPulls, mergedPulls)
+bbc(openedPulls, mergedPulls)
+external(openedPulls, mergedPulls)
+
+puts('Done')
